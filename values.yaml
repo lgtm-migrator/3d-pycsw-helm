@@ -1,0 +1,94 @@
+environment: development
+cloudProvider: azure
+imagePullPolicy: Always
+pullSecretName: acr-registry
+splunkIndex: ""
+
+authentication:
+  ca:
+    enabled: false
+    useExternal: false
+    externalSecretName: ""
+  ssl:
+    enabled: false
+    useExternal: false
+    externalSecretName: ""
+  opa:
+    enabled: false
+    customHeaderName: ""
+
+route:
+  enabled: true
+  paths:
+    pycsw: /
+    # manager: /
+  tls: false
+ingress:
+  enabled: false
+  paths:
+    pycsw: /
+    # manager: /
+  host: minikube.local
+local:
+  certs:
+    ca: certs/ca.crt
+    ssl: certs/openssl.cnf
+    postgres:
+      enabled: false
+      ca: certs/postgres/rootCA.crt
+      key: certs/postgres/avi.key
+      cert: certs/postgres/avi.crt
+postgresSecret:
+  enabled: true
+  useExternal: false
+  externalSecretName: ""
+  caFileKey: caFile
+  certFileKey: certFile
+  keyFileKey: keyFile
+  userName: "postgres"
+  password: "postgres"
+shared:
+  DB:
+    Schema: public
+    Host: 10.8.1.20
+    Port: 6432
+    Name: 3d-catalog-manager-dev
+    requirePassword: true
+    SSL:
+      enabled: false
+
+ports:
+  pycsw:
+    port: 8000
+  opa:
+    port: 9191
+  envoy:
+    port: 8111
+
+opa:
+  image: openpolicyagent/opa
+  imageTag: 0.29.4-envoy-3
+
+envoy:
+  image: envoyproxy/envoy
+  imageTag: v1.18.3
+  maxRequestBytes: 8192
+
+pycsw:
+  image: acrarolibotnonprod.azurecr.io/pycsw
+  imageTag: v3.1.4
+  maxrecords: null
+  loglevel: WARNING
+  logfile: ""
+  profiles: mc3d
+  ServicePort: 80
+  NODE_PORT: 30018
+  replicaCount: 1
+  resources:
+    enabled: true
+    requests:
+      memory: 1Gi
+      cpu: "1"
+    limits:
+      memory: 1Gi
+      cpu: "1"

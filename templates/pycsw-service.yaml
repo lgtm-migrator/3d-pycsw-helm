@@ -1,0 +1,33 @@
+{{ $targetPort := ternary .Values.ports.envoy.port .Values.ports.pycsw.port .Values.authentication.opa.enabled }}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "catalog.fullname" . }}-pycsw
+  labels:
+    app: {{ template "catalog.name" . }}
+    component: pycsw-service
+    environment: {{ .Values.environment }}
+    release: {{ .Release.Name }}
+spec:
+  # In case cloudProvider=azure
+  {{- if eq .Values.cloudProvider "azure" }}
+  type: ClusterIP
+  {{- end }}
+  # In case cloudProvider=minikube
+  {{- if eq .Values.cloudProvider "minikube" }}
+  type: NodePort
+  {{- end }}
+  ports:
+    - port: {{ .Values.pycsw.ServicePort }}
+      targetPort: {{ $targetPort }}
+      protocol: TCP
+      name: http
+      {{- if eq .Values.cloudProvider "minikube" }}
+      nodePort: {{ .Values.pycsw.NODE_PORT }}
+      {{- end }}
+  selector:
+    app: {{ template "catalog.name" . }}
+    release: {{ .Release.Name }}
+    run: {{ .Release.Name }}-pycsw
+

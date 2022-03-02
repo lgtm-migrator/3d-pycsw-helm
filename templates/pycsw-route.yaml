@@ -1,0 +1,17 @@
+{{- if .Values.route.enabled -}}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ template "catalog.fullname" . }}-pycsw-route
+  annotations:
+    haproxy.router.openshift.io/rewrite-target: /
+spec:
+  path: {{ .Values.route.paths.pycsw }}
+  to:
+    kind: Service
+    name: {{ template "catalog.fullname" . }}-pycsw
+  {{- if .Values.route.tls }}
+  tls:
+    termination: edge
+  {{- end -}}
+{{- end -}}

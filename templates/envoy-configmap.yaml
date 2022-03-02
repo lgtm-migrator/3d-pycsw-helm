@@ -1,0 +1,9 @@
+{{- if .Values.authentication.opa.enabled }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ template "catalog.fullname" . }}-envoy
+data:
+  envoy.yaml: |-
+{{ tpl (.Files.Get "config/envoy.yaml") . | indent 4 }}
+{{- end }}
