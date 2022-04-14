@@ -44,8 +44,8 @@ postgresSecret:
   caFileKey: caFile
   certFileKey: certFile
   keyFileKey: keyFile
-  userName: "postgres"
-  password: "postgres"
+  userName: ""
+  password: ""
 shared:
   DB:
     Schema: public
