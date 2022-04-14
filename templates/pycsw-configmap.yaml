@@ -5,3 +5,7 @@ metadata:
 data:
   pycsw.cfg: {{ tpl (.Files.Get "config/pycsw.cfg") . | quote }}
   mappings.py: {{ .Files.Get "config/mappings.py" | quote }}
+  CORS_ENABLED: {{ .Values.pycsw.env.cors.enabled | quote }}
+  CORS_ALLOWED_HEADERS: {{ template "pycsw.cors.allowedHeaders" . }}
+  CORS_ALLOWED_ORIGIN: {{ .Values.pycsw.env.cors.allowedOrigin | quote }}
+  LOG_FORMAT: {{ .Values.pycsw.env.logFormat | quote }}

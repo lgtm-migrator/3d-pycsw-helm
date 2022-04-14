@@ -3,6 +3,7 @@ cloudProvider: azure
 imagePullPolicy: Always
 pullSecretName: acr-registry
 splunkIndex: ""
+resetOnConfigChange: true
 
 authentication:
   ca:
@@ -21,13 +22,11 @@ route:
   enabled: true
   paths:
     pycsw: /
-    # manager: /
-  tls: false
+  tls: true
 ingress:
   enabled: false
   paths:
     pycsw: /
-    # manager: /
   host: minikube.local
 local:
   certs:
@@ -39,7 +38,7 @@ local:
       key: certs/postgres/avi.key
       cert: certs/postgres/avi.crt
 postgresSecret:
-  enabled: true
+  enabled: false
   useExternal: false
   externalSecretName: ""
   caFileKey: caFile
@@ -68,6 +67,7 @@ ports:
 opa:
   image: openpolicyagent/opa
   imageTag: 0.29.4-envoy-3
+  enableLogging: false
 
 envoy:
   image: envoyproxy/envoy
@@ -76,12 +76,19 @@ envoy:
 
 pycsw:
   image: acrarolibotnonprod.azurecr.io/pycsw
-  imageTag: v3.1.4
+  imageTag: v3.1.7
   maxrecords: null
   loglevel: WARNING
   logfile: ""
   profiles: mc3d
-  ServicePort: 80
+  env:
+    logFormat: '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %({x-forwarded-for}i)s %(L)s'
+    cors:
+      enabled: true
+      allowedOrigin: '*'
+      allowedHeaders: ''
+  ServicePort: 8080
+  internalServicePort: 80
   NODE_PORT: 30018
   replicaCount: 1
   resources:

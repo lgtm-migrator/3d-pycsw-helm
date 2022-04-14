@@ -50,3 +50,19 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "pycsw.cors.allowedHeaders" -}}
+{{- $headerList := list -}}
+{{- if ne .Values.pycsw.env.cors.allowedHeaders "" -}}
+{{- range $k, $v := (split "," .Values.pycsw.env.cors.allowedHeaders) -}}
+{{- $headerList = append $headerList $v -}}
+{{- end -}}
+{{- if ne .Values.authentication.opa.customHeaderName "" -}}
+{{- $headerList = append $headerList .Values.authentication.opa.customHeaderName -}}
+{{- end -}}
+{{- $headerList = uniq $headerList -}}
+{{-  quote (join "," $headerList) -}}
+{{- else -}}
+{{- .Values.authentication.opa.customHeaderName | quote -}}
+{{- end -}}
+{{- end -}}
