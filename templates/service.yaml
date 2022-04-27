@@ -19,23 +19,14 @@ spec:
   type: NodePort
   {{- end }}
   ports:
-    # public external trafic
-    - port: {{ .Values.pycsw.ServicePort }}
+    - port: {{ .Values.pycsw.servicePort }}
       targetPort: {{ $targetPort }}
       protocol: TCP
       name: external
       {{- if eq .Values.cloudProvider "minikube" }}
       nodePort: {{ .Values.pycsw.NODE_PORT }}
       {{- end }}
-    # internal
-    {{- if .Values.authentication.opa.enabled }}
-    - port: {{ .Values.pycsw.internalServicePort }}
-      targetPort: {{ .Values.ports.pycsw.port }}
-      protocol: TCP
-      name: internal
-    {{- end }}
   selector:
     app: {{ template "catalog.name" . }}
     release: {{ .Release.Name }}
     run: {{ .Release.Name }}-pycsw
-

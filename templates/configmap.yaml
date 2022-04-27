@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  {{ template "catalog.fullname" . }}-pycsw-configmap
+  name:  {{ template "catalog.fullname" . }}-configmap
 data:
   pycsw.cfg: {{ tpl (.Files.Get "config/pycsw.cfg") . | quote }}
   mappings.py: {{ .Files.Get "config/mappings.py" | quote }}
@@ -9,3 +9,8 @@ data:
   CORS_ALLOWED_HEADERS: {{ template "pycsw.cors.allowedHeaders" . }}
   CORS_ALLOWED_ORIGIN: {{ .Values.pycsw.env.cors.allowedOrigin | quote }}
   LOG_FORMAT: {{ .Values.pycsw.env.logFormat | quote }}
+  DB_HOST: {{ quote .Values.shared.DB.Host }}
+  DB_PORT:  {{ quote .Values.shared.DB.Port }}
+  DB_NAME: {{ quote .Values.shared.DB.Name }}
+  DB_USE_SSL: {{ quote .Values.shared.DB.SSL.enabled }}
+  DB_SCHEMA: {{ quote .Values.shared.DB.Schema }}

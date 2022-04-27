@@ -15,19 +15,22 @@ authentication:
     useExternal: false
     externalSecretName: ""
   opa:
-    enabled: false
-    customHeaderName: ""
+    enabled: true
+    customHeaderName: "x-api-key"
+    resourceType: "3d"
 
 route:
   enabled: true
   paths:
     pycsw: /
   tls: true
+
 ingress:
   enabled: false
   paths:
     pycsw: /
   host: minikube.local
+
 local:
   certs:
     ca: certs/ca.crt
@@ -37,6 +40,7 @@ local:
       ca: certs/postgres/rootCA.crt
       key: certs/postgres/avi.key
       cert: certs/postgres/avi.crt
+
 postgresSecret:
   enabled: false
   useExternal: false
@@ -46,6 +50,7 @@ postgresSecret:
   keyFileKey: keyFile
   userName: ""
   password: ""
+
 shared:
   DB:
     Schema: public
@@ -87,7 +92,7 @@ pycsw:
       enabled: true
       allowedOrigin: '*'
       allowedHeaders: ''
-  ServicePort: 8080
+  servicePort: 8080
   internalServicePort: 80
   NODE_PORT: 30018
   replicaCount: 1
