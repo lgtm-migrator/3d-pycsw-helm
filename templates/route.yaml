@@ -7,6 +7,8 @@ metadata:
     haproxy.router.openshift.io/rewrite-target: /
 spec:
   path: {{ .Values.route.paths.pycsw }}
+  port:
+    targetPort: external
   to:
     kind: Service
     name: {{ template "catalog.fullname" . }}-pycsw

@@ -19,10 +19,10 @@ spec:
   type: NodePort
   {{- end }}
   ports:
-    - port: {{ .Values.pycsw.ServicePort }}
+    - port: {{ .Values.pycsw.servicePort }}
       targetPort: {{ $targetPort }}
       protocol: TCP
-      name: http
+      name: external
       {{- if eq .Values.cloudProvider "minikube" }}
       nodePort: {{ .Values.pycsw.NODE_PORT }}
       {{- end }}
@@ -30,4 +30,3 @@ spec:
     app: {{ template "catalog.name" . }}
     release: {{ .Release.Name }}
     run: {{ .Release.Name }}-pycsw
-

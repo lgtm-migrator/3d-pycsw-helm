@@ -3,7 +3,7 @@
 Expand the name of the chart.
 */}}
 {{- define "catalog.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Chart.Name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -12,15 +12,11 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "catalog.fullname" -}}
-{{- if .Values.fullnameOverride -}}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- $name := default .Chart.Name -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
 {{- end -}}
 {{- end -}}
 
@@ -48,5 +44,21 @@ Create chart name and version as used by the chart label.
 {{- if .Values.postgresSecret.keyFileKey -}}
 {{- "&sslkey=" -}}/.postgresql/key.pem
 {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "pycsw.cors.allowedHeaders" -}}
+{{- $headerList := list -}}
+{{- if ne .Values.pycsw.env.cors.allowedHeaders "" -}}
+{{- range $k, $v := (split "," .Values.pycsw.env.cors.allowedHeaders) -}}
+{{- $headerList = append $headerList $v -}}
+{{- end -}}
+{{- if ne .Values.authentication.opa.customHeaderName "" -}}
+{{- $headerList = append $headerList .Values.authentication.opa.customHeaderName -}}
+{{- end -}}
+{{- $headerList = uniq $headerList -}}
+{{-  quote (join "," $headerList) -}}
+{{- else -}}
+{{- .Values.authentication.opa.customHeaderName | quote -}}
 {{- end -}}
 {{- end -}}
