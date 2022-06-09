@@ -16,8 +16,8 @@ authentication:
     externalSecretName: ""
   opa:
     enabled: true
-    customHeaderName: "x-api-key"
-    resourceType: "3d"
+    customHeaderName: ""
+    domains: "3d"
 
 route:
   enabled: true
