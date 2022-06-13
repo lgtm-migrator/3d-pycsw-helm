@@ -27,7 +27,7 @@ payload = payload {
 
 ### Resources Access ###
 user_has_resource_access[payload] {
-  lower(payload.resourceTypes[_]) = {{ .Values.authentication.opa.resourceType | lower | quote }}
+  lower(payload.d[_]) = {{ .Values.authentication.opa.domains | lower | quote }}
 }
 ### Resources Access ###
 
