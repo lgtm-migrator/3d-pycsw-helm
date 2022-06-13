@@ -16,7 +16,7 @@ authentication:
     externalSecretName: ""
   opa:
     enabled: true
-    customHeaderName: ""
+    customHeaderName: "x-api-key"
     domains: "3d"
 
 route:
@@ -56,7 +56,7 @@ shared:
     Schema: public
     Host: 10.8.1.20
     Port: 6432
-    Name: 3d-catalog-manager-dev
+    Name: 3d-catalog-manager-int
     requirePassword: true
     SSL:
       enabled: false
