@@ -24,6 +24,7 @@ MD_CORE_MODEL = {
         'pycsw:Publisher': 'producer_name',
         'pycsw:Contributor': 'producer_name',
         'pycsw:Modified': 'update_date',
+        'pycsw:updateDate': 'update_date',
         'pycsw:Date': 'creation_date',
         'pycsw:Format': 'type',
         'pycsw:Source': 'product_name',
