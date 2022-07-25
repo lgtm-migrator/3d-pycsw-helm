@@ -54,9 +54,9 @@ postgresSecret:
 shared:
   DB:
     Schema: public
-    Host: 10.8.1.20
-    Port: 6432
-    Name: 3d-catalog-manager-int
+    Host: 10.0.4.4
+    Port: 5432
+    Name: 3d-catalog-manager-dev
     requirePassword: true
     SSL:
       enabled: false
