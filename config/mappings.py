@@ -66,6 +66,6 @@ MD_CORE_MODEL = {
         'pycsw:Relation': '',
         'pycsw:Language': '',
         'pycsw:Keywords': '',
-        'pycsw:TopicCategory': '',
+        'pycsw:TopicCategory': ''
     }
 }
