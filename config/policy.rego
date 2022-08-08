@@ -4,7 +4,7 @@ import input.attributes.request.http as http_request
 import input.parsed_query as query_params
 
 # Decline until I allow it.
-default allow = false 
+default allow = false
 
 ### TOKEN ###
 # Gets the token form query
@@ -13,9 +13,9 @@ jwt_token = token {
 }
 
 # Gets the token form header
-{{- if .Values.authentication.opa.customHeaderName }}
+{{- if .Values.shared.authentication.opa.customHeaderName }}
 jwt_token = token {
-  token := io.jwt.decode(http_request.headers[{{ .Values.authentication.opa.customHeaderName | lower | quote }}])
+  token := io.jwt.decode(http_request.headers[{{ .Values.shared.authentication.opa.customHeaderName | lower | quote }}])
 }
 {{- end }}
 
@@ -27,7 +27,7 @@ payload = payload {
 
 ### Resources Access ###
 user_has_resource_access[payload] {
-  lower(payload.d[_]) = {{ .Values.authentication.opa.domains | lower | quote }}
+  lower(payload.d[_]) = {{ .Values.shared.authentication.opa.domains | lower | quote }}
 }
 ### Resources Access ###
 

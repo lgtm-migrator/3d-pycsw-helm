@@ -1,106 +1,160 @@
+global:
+  cloudProvider: {}
+  tracing: {}
+  metrics: {}
+  environment: {}
+
+enabled: true
 environment: development
-cloudProvider: azure
-imagePullPolicy: Always
-pullSecretName: acr-registry
-splunkIndex: ""
+replicaCount: 1
+initialDelaySeconds: 60
 resetOnConfigChange: true
+splunkIndex: ''
+
+cloudProvider:
+  dockerRegistryUrl: my-registry-url.io
+  imagePullSecretName: 'my-registry-secret'
+  flavor: openshift
 
 authentication:
   ca:
     enabled: false
     useExternal: false
-    externalSecretName: ""
+    externalSecretName: ''
   ssl:
     enabled: false
     useExternal: false
-    externalSecretName: ""
-  opa:
-    enabled: true
-    customHeaderName: "x-api-key"
-    domains: "3d"
+    externalSecretName: ''
 
-route:
-  enabled: true
-  paths:
-    pycsw: /
-  tls: true
-
-ingress:
-  enabled: false
-  paths:
-    pycsw: /
-  host: minikube.local
-
-local:
-  certs:
-    ca: certs/ca.crt
-    ssl: certs/openssl.cnf
-    postgres:
-      enabled: false
-      ca: certs/postgres/rootCA.crt
-      key: certs/postgres/avi.key
-      cert: certs/postgres/avi.crt
-
-postgresSecret:
-  enabled: false
-  useExternal: false
-  externalSecretName: ""
-  caFileKey: caFile
-  certFileKey: certFile
-  keyFileKey: keyFile
-  userName: ""
-  password: ""
+caSecretName: ''
+caPath: '/usr/local/share/ca-certificates'
+caKey: 'ca.crt'
 
 shared:
-  DB:
-    Schema: public
-    Host: 10.0.4.4
-    Port: 5432
-    Name: 3d-catalog-manager-dev
-    requirePassword: true
-    SSL:
-      enabled: false
+  authentication:
+    opa:
+      enabled: true
+      customHeaderName: "x-api-key"
+      domains: 3d
+  ca:
+    secretName: ''
+    path: '/usr/local/share/ca-certificates'
+    key: 'ca.crt'
+  db:
+    host: "10.0.4.4"
+    name: "3d-test"
+    port: 5432
+    sslEnabled: false
+    rejectUnauthorized: true
+    secrets:
+      useExternal: false
+      externalSecretName: ''
 
-ports:
-  pycsw:
-    port: 8000
-  opa:
-    port: 9191
-  envoy:
-    port: 8111
+image:
+  repository: pycsw
+  tag: nati-test
+
+servicePort: 8080
+internalServicePort: 80
+pycswPort: 8000
+nodePort: 30018
+
+env:
+  loglevel: WARNING
+  maxrecords: null
+  logfile: ''
+  profiles: mc_3d
+  logFormat: >-
+    %(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
+    %({x-forwarded-for}i)s %(L)s
+  uwsgi:
+    processes: 6
+    threads: 10
+  cors:
+    enabled: true
+    allowedOrigin: '*'
+    allowedHeaders: ''
+  db:
+    schema: public
+    requirePassword: false
+  tracing:
+    enabled: false
+    url: http://localhost:55681/v1/trace
+  metrics:
+    enabled: false
+    url: http://localhost:55681/v1/metrics
+
+resources:
+  enabled: true
+  value:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+nginx:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: nginx
+    tag: 'merge' 
+  port: 8080
+  internalServicePort: 80
+  targetPort: 8080
+  nodePort: 30001
+  resources:
+    enabled: true
+    value:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
 
 opa:
   image: openpolicyagent/opa
   imageTag: 0.29.4-envoy-3
+  port: 9191
   enableLogging: false
-
+  resources:
+    enabled: true
+    value:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
 envoy:
   image: envoyproxy/envoy
   imageTag: v1.18.3
+  port: 6565
   maxRequestBytes: 8192
-
-pycsw:
-  image: acrarolibotnonprod.azurecr.io/pycsw
-  imageTag: v3.1.7
-  maxrecords: null
-  loglevel: WARNING
-  logfile: ""
-  profiles: mc_3d
-  env:
-    logFormat: '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %({x-forwarded-for}i)s %(L)s'
-    cors:
-      enabled: true
-      allowedOrigin: '*'
-      allowedHeaders: ''
-  servicePort: 8080
-  internalServicePort: 80
-  NODE_PORT: 30018
-  replicaCount: 1
   resources:
     enabled: true
-    requests:
-      memory: 1Gi
-      cpu: "1"
-    limits:
-      memory: 1Gi
-      cpu: "1"
+    value:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi        
+
+route:
+  enabled: true
+  path: /
+  https: true
+  timeout:
+    enabled: false # defaults to 30s by openshift
+    duration: 60s # supported units (us, ms, s, m, h, d)
+
+ingress:
+  enabled: false
+  path: /
+  host: 'localhost'
+  cors:
+    enabled: true
+    origin: '*'

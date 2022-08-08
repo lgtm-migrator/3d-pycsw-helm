@@ -1,16 +1,32 @@
+{{- $chartName := include "pycsw.name" . -}}
+{{- $tracingUrl := include "pycsw.tracingUrl" . -}}
+{{- $metricsUrl := include "pycsw.metricsUrl" . -}}
+{{- if .Values.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name:  {{ template "catalog.fullname" . }}-configmap
+  name: {{ .Release.Name }}-{{ $chartName }}-configmap
 data:
+  {{ if .Values.env.tracing.enabled }}
+  TELEMETRY_TRACING_ENABLED: 'true'
+  TELEMETRY_TRACING_URL: {{ $tracingUrl }}
+  {{ end }}
+  {{ if .Values.env.metrics.enabled }}
+  TELEMETRY_METRICS_ENABLED: 'true'
+  TELEMETRY_METRICS_URL: {{ $metricsUrl }}
+  {{ end }}
   pycsw.cfg: {{ tpl (.Files.Get "config/pycsw.cfg") . | quote }}
   mappings.py: {{ .Files.Get "config/mappings.py" | quote }}
-  CORS_ENABLED: {{ .Values.pycsw.env.cors.enabled | quote }}
+  uwsgi.ini: {{ tpl (.Files.Get "config/pycswWsgi.ini") . | quote }}
+  CORS_ENABLED: {{ .Values.env.cors.enabled | quote }}
   CORS_ALLOWED_HEADERS: {{ template "pycsw.cors.allowedHeaders" . }}
-  CORS_ALLOWED_ORIGIN: {{ .Values.pycsw.env.cors.allowedOrigin | quote }}
-  LOG_FORMAT: {{ .Values.pycsw.env.logFormat | quote }}
-  DB_HOST: {{ quote .Values.shared.DB.Host }}
-  DB_PORT:  {{ quote .Values.shared.DB.Port }}
-  DB_NAME: {{ quote .Values.shared.DB.Name }}
-  DB_USE_SSL: {{ quote .Values.shared.DB.SSL.enabled }}
-  DB_SCHEMA: {{ quote .Values.shared.DB.Schema }}
+  CORS_ALLOWED_ORIGIN: {{ .Values.env.cors.allowedOrigin | quote }}
+  LOG_FORMAT: {{ .Values.env.logFormat | quote }}
+  DB_HOST: {{ quote .Values.shared.db.host }}
+  DB_PORT:  {{ quote .Values.shared.db.port }}
+  DB_NAME: {{ quote .Values.shared.db.name }}
+  POSTGRES_ENABLE_SSL_AUTH: {{ quote .Values.shared.db.sslEnabled }}
+  DB_SCHEMA: {{ quote .Values.env.db.schema }}
+  PYCSW_WSGI_PROCESSES: {{ .Values.env.uwsgi.processes | quote }}
+  PYCSW_WSGI_THREADS: {{ .Values.env.uwsgi.threads | quote }}
+{{- end }}
