@@ -67,6 +67,7 @@ MD_CORE_MODEL = {
         'pycsw:minFlightAlt': 'min_flight_alt',
         'pycsw:maxFlightAlt': 'max_flight_alt',
         'pycsw:geographicArea': 'geographic_area',
-        'pycsw:productBBox': 'product_bbox'
+        'pycsw:productBBox': 'product_bbox',
+        'pycsw:updateDate': 'update_date',
     }
 }
