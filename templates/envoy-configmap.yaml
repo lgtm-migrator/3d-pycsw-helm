@@ -1,8 +1,9 @@
+{{- $chartName := include "pycsw.name" . -}}
 {{- if .Values.authentication.opa.enabled }}
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ template "catalog.fullname" . }}-envoy
+  name: {{ .Release.Name }}-{{ $chartName }}-envoy
 data:
   envoy.yaml: |-
 {{ tpl (.Files.Get "config/envoy.yaml") . | indent 4 }}

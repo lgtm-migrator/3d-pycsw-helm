@@ -1,6 +1,14 @@
+{{- $releaseName := .Release.Name -}}
+{{- $chartName := include "pycsw.name" . -}}
+{{- $cloudProviderFlavor := include "pycsw.cloudProviderFlavor" . -}}
+{{- $cloudProviderDockerRegistryUrl := include "pycsw.cloudProviderDockerRegistryUrl" . -}}
+{{- $cloudProviderImagePullSecretName := include "pycsw.cloudProviderImagePullSecretName" . -}}
 {{ $caSecretName := ternary .Values.authentication.ca.externalSecretName (printf "%s%s" .Release.Name "-root-ca") .Values.authentication.ca.useExternal }}
 {{ $sslSecretName := ternary .Values.authentication.ssl.externalSecretName (printf "%s%s" .Release.Name "-open-ssl") .Values.authentication.ssl.useExternal }}
-{{ $postgresSecretName := ternary .Values.postgresSecret.externalSecretName (printf "%s%s" .Release.Name "-postgres-secret") .Values.postgresSecret.useExternal }}
+{{ $postgresSecretName := ternary .Values.authentication.db.externalSecretName (printf "%s%s" .Release.Name "-postgres-secret") .Values.authentication.db.useExternal }}
+{{- $imageTag := include "pycsw.tag" . -}}
+
+{{- if .Values.enabled -}}
 
 {{- if .Values.authentication.ca.enabled }}
 {{- if and .Values.authentication.ca.useExternal (not .Values.authentication.ca.externalSecretName) }}
@@ -17,40 +25,50 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "catalog.fullname" . }}-pycsw
+  name: {{ $releaseName }}-{{ $chartName }}
   labels:
-    app: {{ template "catalog.name" . }}
-    component: pyscw
-    environment: {{ .Values.environment }}
-    release: {{ .Release.Name }}
+    app: {{ $chartName }}
+    component: {{ $chartName }}
+    environment: {{ include "pycsw.environment" . }}
+    release: {{ $releaseName }}
+    {{- include "pycsw.labels" . | nindent 4 }}
   annotations:
     collectord.io/index: {{ quote .Values.splunkIndex }}
 spec:
-  replicas: {{ .Values.pycsw.replicaCount }}
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ template "catalog.name" . }}
-      release: {{ .Release.Name }}
-      run: {{ .Release.Name }}-pycsw
+      app: {{ $chartName }}
+      release: {{ $releaseName }}
+      run: {{ $releaseName }}-{{ $chartName }}
+      {{- include "pycsw.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ template "catalog.name" . }}
-        release: {{ .Release.Name }}
-        run: {{ .Release.Name }}-pycsw
+        app: {{ $chartName }}
+        release: {{ $releaseName }}
+        run: {{ $releaseName }}-{{ $chartName }}
+        {{- include "pycsw.selectorLabels" . | nindent 8 }}
+      {{- if .Values.resetOnConfigChange }}
+      annotations:
+        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- end }}
     spec:
+    {{- if $cloudProviderImagePullSecretName }}
       imagePullSecrets:
-        - name: {{ .Values.pullSecretName }}
+        - name: {{ $cloudProviderImagePullSecretName | quote }}
+    {{- end }}
       containers:
-        - name: {{ .Chart.Name }}-pycsw
-          image: "{{ .Values.pycsw.image }}:{{ .Values.pycsw.imageTag}}"
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
+        - name: {{ $releaseName }}-{{ $chartName }}-deployment
+          {{- with .Values.image }}
+          image: {{ $cloudProviderDockerRegistryUrl }}{{ .repository }}:{{ $imageTag }}
+          {{- end }}
           volumeMounts:
-            # {{- if .Values.caSecretName }}
-            # - mountPath: {{ printf "%s/%s" .Values.caPath .Values.caKey | quote }}
-            #   name: root-ca
-            #   subPath: {{ quote .Values.caKey }}
-            # {{- end }}
+            {{- if .Values.authentication.ca.secretName }}
+            - mountPath: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
+              name: root-ca
+              subPath: {{ quote .Values.authentication.ca.key }}
+            {{- end }}
             {{- if .Values.authentication.ca.enabled }}
             - name: root-ca
               mountPath: "/usr/local/share/ca-certificates"
@@ -66,30 +84,33 @@ spec:
             - name: pyscw-mappings
               mountPath: /etc/pycsw/mappings.py
               subPath: mappings.py
-            {{- if .Values.shared.DB.SSL.enabled }}
-            {{- if .Values.postgresSecret.caFileKey }}
+            - mountPath: "/pycsw/uwsgi.ini"
+              name: uwsgi-config
+              subPath: uwsgi.ini
+            {{- if .Values.db.sslEnabled }}
+            {{- if .Values.authentication.db.caFileKey }}
             - name: ca-file
               mountPath: /certs/ca.crt
               subPath: ca.pem
             {{- end }}
-            {{- if .Values.postgresSecret.keyFileKey }}
+            {{- if .Values.authentication.db.keyFileKey }}
             - name: key-file
               mountPath: /certs/key.pem
               subPath: key.pem
             {{- end }}
-            {{- if .Values.postgresSecret.certFileKey }}
+            {{- if .Values.authentication.db.certFileKey }}
             - name: cert-file
               mountPath: /certs/cert.pem
               subPath: cert.pem
             {{- end }}
             {{- end }}
           env:
-            # {{- if .Values.caSecretName }}
-            # - name: REQUESTS_CA_BUNDLE
-            #   value: {{ printf "%s/%s" .Values.caPath .Values.caKey | quote }}
-            # - name: NODE_EXTRA_CA_CERTS
-            #   value: {{ printf "[%s/%s]" .Values.caPath .Values.caKey | quote }}
-            # {{- end }}
+            {{- if .Values.authentication.ca.secretName }}
+            - name: REQUESTS_CA_BUNDLE
+              value: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
+            {{- end }}
             {{- if .Values.authentication.ca.enabled }}
             - name: REQUESTS_CA_BUNDLE
               value: '/usr/local/share/ca-certificates/ca.crt'
@@ -103,137 +124,41 @@ spec:
                 secretKeyRef:
                   name: {{ $postgresSecretName }}
                   key: username
+            {{- if .Values.authentication.db.requirePassword }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $postgresSecretName }}
                   key: password
+            {{- end }}
             - name: POSTGRES_CERTS_MOUNT_PATH
               value: /certs
             - name: POSTGRES_CERT_FILE_NAME
               value: cert.pem
             - name: POSTGRES_KEY_FILE_NAME
               value: key.pem
-            # - name: DB_HOST
-            #   valueFrom:
-            #     configMapKeyRef:
-            #       name: {{ template "catalog.fullname" . }}-shared-configmap
-            #       key: DB_HOST
-            # - name: DB_PORT
-            #   valueFrom:
-            #     configMapKeyRef:
-            #       name: {{ template "catalog.fullname" . }}-shared-configmap
-            #       key: DB_PORT
-            # - name: DB_NAME
-            #   valueFrom:
-            #     configMapKeyRef:
-            #       name: {{ template "catalog.fullname" . }}-shared-configmap
-            #       key: DB_NAME
-            # - name: DB_SCHEMA
-            #   valueFrom:
-            #     configMapKeyRef:
-            #       name: {{ template "catalog.fullname" . }}-shared-configmap
-            #       key: DB_SCHEMA
-            # - name: POSTGRES_ENABLE_SSL_AUTH
-            #   valueFrom:
-            #     configMapKeyRef:
-            #       name: {{ template "catalog.fullname" . }}-shared-configmap
-            #       key: DB_USE_SSL
           envFrom:
-              - configMapRef:
-                  name: {{ .Release.Name }}-{{ .Chart.Name }}-configmap
+            - configMapRef:
+                name: {{ $releaseName }}-{{ $chartName }}-configmap
           ports:
             - name: http
-              containerPort: 8000
+              containerPort: {{ .Values.env.targetPort }}
               protocol: TCP
           readinessProbe:
             httpGet:
               path: /csw?service=CSW&request=GetCapabilities&version=3.0.0
-              port: 8000
+              port: 8080
             initialDelaySeconds: 30
             timeoutSeconds: 1
-          {{- if .Values.pycsw.resources.enabled }}
+          {{- if .Values.resources.enabled }}
           resources:
-            requests:
-              memory: {{ .Values.pycsw.resources.requests.memory }}
-              cpu: {{ .Values.pycsw.resources.requests.cpu }}
-            limits:
-              memory: {{ .Values.pycsw.resources.limits.memory }}
-              cpu: {{ .Values.pycsw.resources.limits.cpu }}
+            {{- toYaml .Values.resources.value | nindent 12 }}
           {{- end }}
-        {{- if .Values.authentication.opa.enabled }}
-        - name: envoy
-          image: "{{ .Values.envoy.image }}:{{ .Values.envoy.imageTag }}"
-          volumeMounts:
-          - readOnly: true
-            mountPath: /config
-            name: proxy-config
-          args:
-          - "envoy"
-          - "--config-path"
-          - "/config/envoy.yaml"
-          ports:
-            - name: http
-              containerPort: {{ .Values.ports.envoy.port }}
-              protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /health?plugins
-          #     port: {{ .Values.ports.envoy.port }}
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 30
-          # readinessProbe:
-          #   httpGet:
-          #     path: /health?plugins
-          #     port: {{ .Values.ports.envoy.port }}
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 30
-        - name: opa
-          image: "{{ .Values.opa.image }}:{{ .Values.opa.imageTag }}"
-          volumeMounts:
-          - readOnly: true
-            mountPath: /policy
-            name: opa-policy
-          args:
-          - "run"
-          - "--server"
-          - "--addr=0.0.0.0:8181"
-          - "--diagnostic-addr=0.0.0.0:8282"
-          - "--set=plugins.envoy_ext_authz_grpc.add=:9191"
-          - "--set=plugins.envoy_ext_authz_grpc.path=envoy/authz/allow"
-          - "--set=decision_logs.console=true"
-          - "/policy/policy.rego"
-          livenessProbe:
-            httpGet:
-              path: /health?plugins
-              port: 8282
-            initialDelaySeconds: 5
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /health?plugins
-              port: 8282
-            initialDelaySeconds: 5
-            periodSeconds: 30
-        {{- end }}
       volumes:
-        # {{- if .Values.caSecretName }}
-        # - name: root-ca
-        #   secret:
-        #     secretName: {{ .Values.caSecretName }}
-        # {{- end }}
-        {{- if .Values.authentication.opa.enabled }}
-        - name: opa-policy
-          secret:
-            secretName: {{ include "catalog.fullname" . }}-opa
-        - name: proxy-config
-          configMap:
-            name: {{ include "catalog.fullname" . }}-envoy
-        {{- end }}
-        {{- if .Values.authentication.ca.enabled }}
+        {{- if .Values.authentication.ca.secretName }}
         - name: root-ca
           secret:
-            secretName: {{ $caSecretName }}
+            secretName: {{ .Values.authentication.ca.secretName }}
         {{- end }}
         {{- if .Values.authentication.ssl.enabled }}
         - name: open-ssl
@@ -242,39 +167,46 @@ spec:
         {{- end }}
         - name: pyscw-config
           configMap:
-              name: {{ template "catalog.fullname" . }}-configmap
+              name: {{ .Release.Name }}-{{ $chartName }}-configmap
               items:
               - key: "pycsw.cfg"
                 path: "pycsw.cfg"
         - name: pyscw-mappings
           configMap:
-              name: {{ template "catalog.fullname" . }}-configmap
+              name: {{ .Release.Name }}-{{ $chartName }}-configmap
               items:
               - key: "mappings.py"
                 path: "mappings.py"
-      {{- if .Values.shared.DB.SSL.enabled }}
-        {{- if .Values.postgresSecret.caFileKey }}
+        - name: uwsgi-config
+          configMap:
+            name: {{ .Release.Name }}-{{ $chartName }}-configmap
+            items:
+            - key: "uwsgi.ini"
+              path: "uwsgi.ini"
+        {{- if .Values.authentication.db.sslEnabled }}
+        {{- if .Values.authentication.db.caFileKey }}
         - name: ca-file
           secret:
             secretName: {{ $postgresSecretName }}
             items:
-              - key: {{ .Values.postgresSecret.caFileKey }}
-        {{- end }}
+              - key: {{ .Values.authentication.db.caFileKey }}
                 path: ca.pem
-        {{- if .Values.postgresSecret.keyFileKey }}
+        {{- end }}
+        {{- if .Values.authentication.db.keyFileKey }}
         - name: key-file
           secret:
             secretName: {{ $postgresSecretName }}
             items:
-              - key: {{ .Values.postgresSecret.keyFileKey }}
+              - key: {{ .Values.authentication.db.keyFileKey }}
                 path: key.pem
         {{- end }}
-        {{- if .Values.postgresSecret.certFileKey }}
+        {{- if .Values.authentication.db.certFileKey }}
         - name: cert-file
           secret:
             secretName: {{ $postgresSecretName }}
             items:
-              - key: {{ .Values.postgresSecret.certFileKey }}
+              - key: {{ .Values.authentication.db.certFileKey }}
                 path: cert.pem
         {{- end }}
-      {{- end }}
+        {{- end }}
+{{- end -}}

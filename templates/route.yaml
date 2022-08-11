@@ -1,18 +1,25 @@
-{{- if .Values.route.enabled -}}
+{{- $releaseName := .Release.Name -}}
+{{- $chartName := include "pycsw.name" . -}}
+{{- $cloudProviderFlavor := include "pycsw.cloudProviderFlavor" . -}}
+{{- $targetPort := ternary "external" "internal" .Values.authentication.opa.enabled -}}
+{{- if and (and (.Values.enabled) (eq $cloudProviderFlavor "openshift")) (.Values.route.enabled) -}}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: {{ template "catalog.fullname" . }}-pycsw-route
+  name: {{ $releaseName }}-{{ $chartName }}-nginx-route
   annotations:
     haproxy.router.openshift.io/rewrite-target: /
+    {{- if .Values.route.timeout.enabled }}
+    haproxy.router.openshift.io/timeout: {{ .Values.route.timeout.duration }}
+    {{- end }}
 spec:
-  path: {{ .Values.route.paths.pycsw }}
+  path:  {{ .Values.route.path | default "/" }}
   port:
-    targetPort: external
+    targetPort: {{ $targetPort }}
   to:
     kind: Service
-    name: {{ template "catalog.fullname" . }}-pycsw
-  {{- if .Values.route.tls }}
+    name: {{ $releaseName }}-{{ $chartName }}-nginx
+  {{- if .Values.route.https }}
   tls:
     termination: edge
   {{- end -}}

@@ -2,9 +2,10 @@ package envoy.authz
 
 import input.attributes.request.http as http_request
 import input.parsed_query as query_params
+import input.attributes.metadataContext.filterMetadata.map_colonies as map_colonies
 
 # Decline until I allow it.
-default allow = false 
+default allow = false
 
 ### TOKEN ###
 # Gets the token form query
@@ -27,7 +28,7 @@ payload = payload {
 
 ### Resources Access ###
 user_has_resource_access[payload] {
-  lower(payload.d[_]) = {{ .Values.authentication.opa.domains | lower | quote }}
+  lower(payload.d[_]) = lower(map_colonies.domain)
 }
 ### Resources Access ###
 
