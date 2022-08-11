@@ -5,15 +5,16 @@ global:
   environment: {}
 
 enabled: true
-environment: development
+environment: 3d-dev
 replicaCount: 1
 initialDelaySeconds: 60
+nodePort: 30018
 resetOnConfigChange: true
 splunkIndex: ''
 
 cloudProvider:
-  dockerRegistryUrl: my-registry-url.io
-  imagePullSecretName: 'my-registry-secret'
+  dockerRegistryUrl: acrarolibotnonprod.azurecr.io
+  imagePullSecretName: 'acr-registry'
   flavor: openshift
 
 authentication:
@@ -21,46 +22,42 @@ authentication:
     enabled: false
     useExternal: false
     externalSecretName: ''
+    secretName: ''
+    path: '/usr/local/share/ca-certificates'
+    key: 'ca.crt'
   ssl:
     enabled: false
     useExternal: false
     externalSecretName: ''
-
-caSecretName: ''
-caPath: '/usr/local/share/ca-certificates'
-caKey: 'ca.crt'
-
-shared:
-  authentication:
-    opa:
-      enabled: true
-      customHeaderName: "x-api-key"
-      domains: 3d
-  ca:
-    secretName: ''
-    path: '/usr/local/share/ca-certificates'
-    key: 'ca.crt'
+  opa:
+    enabled: true
+    customHeaderName: "x-api-key"
+  cors:
+    enabled: true
+    allowedOrigin: '*'
+    allowedHeaders: ''
   db:
-    host: "10.0.4.4"
-    name: "3d-test"
-    port: 5432
+    requirePassword: true
+    useExternal: true
+    externalSecretName: 'pycsw-postgres-secret'
     sslEnabled: false
-    rejectUnauthorized: true
-    secrets:
-      useExternal: false
-      externalSecretName: ''
+    caFileKey: "caFileKey"
+    certFileKey: "certFileKey"
+    keyFileKey: "keyFileKey"
 
-image:
+
+image: 
   repository: pycsw
   tag: nati-test
 
-servicePort: 8080
-internalServicePort: 80
-pycswPort: 8000
-nodePort: 30018
-
 env:
+  port: 8080
+  targetPort: 8000 # To pycsw itself
+  protocol: TCP
   loglevel: WARNING
+  logPrettyPrintEnabled: false
+  responseCompressionEnabled: true
+  requestPayloadLimit: 1mb
   maxrecords: null
   logfile: ''
   profiles: mc_3d
@@ -70,13 +67,6 @@ env:
   uwsgi:
     processes: 6
     threads: 10
-  cors:
-    enabled: true
-    allowedOrigin: '*'
-    allowedHeaders: ''
-  db:
-    schema: public
-    requirePassword: false
   tracing:
     enabled: false
     url: http://localhost:55681/v1/trace
@@ -84,15 +74,22 @@ env:
     enabled: false
     url: http://localhost:55681/v1/metrics
 
+db:
+  host: 10.0.4.4
+  name: 3d-v2-profile-test
+  schema: public
+  port: 5432
+  rejectUnauthorized: true
+
 resources:
-  enabled: true
+  enabled: false
   value:
     limits:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 2
+      memory: 1200Mi
     requests:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 2
+      memory: 1200Mi
 
 nginx:
   enabled: true
@@ -101,8 +98,7 @@ nginx:
     repository: nginx
     tag: 'merge' 
   port: 8080
-  internalServicePort: 80
-  targetPort: 8080
+  internalPort: 80
   nodePort: 30001
   resources:
     enabled: true
@@ -130,9 +126,10 @@ opa:
         memory: 128Mi
 envoy:
   image: envoyproxy/envoy
-  imageTag: v1.18.3
+  imageTag: v1.20.7
   port: 6565
   maxRequestBytes: 8192
+  requestedDomain: 3d
   resources:
     enabled: true
     value:
@@ -155,6 +152,3 @@ ingress:
   enabled: false
   path: /
   host: 'localhost'
-  cors:
-    enabled: true
-    origin: '*'

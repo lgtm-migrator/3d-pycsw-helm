@@ -5,7 +5,7 @@
 {{- $cloudProviderImagePullSecretName := include "pycsw.cloudProviderImagePullSecretName" . -}}
 {{ $caSecretName := ternary .Values.authentication.ca.externalSecretName (printf "%s%s" .Release.Name "-root-ca") .Values.authentication.ca.useExternal }}
 {{ $sslSecretName := ternary .Values.authentication.ssl.externalSecretName (printf "%s%s" .Release.Name "-open-ssl") .Values.authentication.ssl.useExternal }}
-{{ $postgresSecretName := ternary .Values.shared.db.secrets.externalSecretName (printf "%s%s" .Release.Name "-postgres-secret") .Values.shared.db.secrets.useExternal }}
+{{ $postgresSecretName := ternary .Values.authentication.db.externalSecretName (printf "%s%s" .Release.Name "-postgres-secret") .Values.authentication.db.useExternal }}
 {{- $imageTag := include "pycsw.tag" . -}}
 
 {{- if .Values.enabled -}}
@@ -64,10 +64,10 @@ spec:
           image: {{ $cloudProviderDockerRegistryUrl }}{{ .repository }}:{{ $imageTag }}
           {{- end }}
           volumeMounts:
-            {{- if .Values.shared.ca.secretName }}
-            - mountPath: {{ printf "%s/%s" .Values.shared.ca.path .Values.shared.ca.key | quote }}
+            {{- if .Values.authentication.ca.secretName }}
+            - mountPath: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
               name: root-ca
-              subPath: {{ quote .Values.caKey }}
+              subPath: {{ quote .Values.authentication.ca.key }}
             {{- end }}
             {{- if .Values.authentication.ca.enabled }}
             - name: root-ca
@@ -87,29 +87,29 @@ spec:
             - mountPath: "/pycsw/uwsgi.ini"
               name: uwsgi-config
               subPath: uwsgi.ini
-            {{- if .Values.shared.db.sslEnabled }}
-            {{- if .Values.postgresSecret.caKey }}
+            {{- if .Values.db.sslEnabled }}
+            {{- if .Values.authentication.db.caFileKey }}
             - name: ca-file
               mountPath: /certs/ca.crt
               subPath: ca.pem
             {{- end }}
-            {{- if .Values.postgresSecret.keyFileKey }}
+            {{- if .Values.authentication.db.keyFileKey }}
             - name: key-file
               mountPath: /certs/key.pem
               subPath: key.pem
             {{- end }}
-            {{- if .Values.postgresSecret.certFileKey }}
+            {{- if .Values.authentication.db.certFileKey }}
             - name: cert-file
               mountPath: /certs/cert.pem
               subPath: cert.pem
             {{- end }}
             {{- end }}
           env:
-            {{- if .Values.shared.ca.secretName }}
+            {{- if .Values.authentication.ca.secretName }}
             - name: REQUESTS_CA_BUNDLE
-              value: {{ printf "%s/%s" .Values.caPath .Values.caKey | quote }}
+              value: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
             - name: NODE_EXTRA_CA_CERTS
-              value: {{ printf "[%s/%s]" .Values.caPath .Values.caKey | quote }}
+              value: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
             {{- end }}
             {{- if .Values.authentication.ca.enabled }}
             - name: REQUESTS_CA_BUNDLE
@@ -124,11 +124,13 @@ spec:
                 secretKeyRef:
                   name: {{ $postgresSecretName }}
                   key: username
+            {{- if .Values.authentication.db.requirePassword }}
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $postgresSecretName }}
                   key: password
+            {{- end }}
             - name: POSTGRES_CERTS_MOUNT_PATH
               value: /certs
             - name: POSTGRES_CERT_FILE_NAME
@@ -140,7 +142,7 @@ spec:
                 name: {{ $releaseName }}-{{ $chartName }}-configmap
           ports:
             - name: http
-              containerPort: {{ .Values.pycswPort }}
+              containerPort: {{ .Values.env.targetPort }}
               protocol: TCP
           readinessProbe:
             httpGet:
@@ -153,10 +155,10 @@ spec:
             {{- toYaml .Values.resources.value | nindent 12 }}
           {{- end }}
       volumes:
-        {{- if .Values.shared.ca.secretName }}
+        {{- if .Values.authentication.ca.secretName }}
         - name: root-ca
           secret:
-            secretName: {{ .Values.shared.ca.secretName }}
+            secretName: {{ .Values.authentication.ca.secretName }}
         {{- end }}
         {{- if .Values.authentication.ssl.enabled }}
         - name: open-ssl
@@ -181,30 +183,30 @@ spec:
             items:
             - key: "uwsgi.ini"
               path: "uwsgi.ini"
-        {{- if .Values.shared.db.sslEnabled }}
-          {{- if .Values.postgresSecret.caFileKey }}
-          - name: ca-file
-            secret:
-              secretName: {{ $postgresSecretName }}
-              items:
-                - key: {{ .Values.postgresSecret.caFileKey }}
-          {{- end }}
-                  path: ca.pem
-          {{- if .Values.postgresSecret.keyFileKey }}
-          - name: key-file
-            secret:
-              secretName: {{ $postgresSecretName }}
-              items:
-                - key: {{ .Values.postgresSecret.keyFileKey }}
-                  path: key.pem
-          {{- end }}
-          {{- if .Values.postgresSecret.certFileKey }}
-          - name: cert-file
-            secret:
-              secretName: {{ $postgresSecretName }}
-              items:
-                - key: {{ .Values.postgresSecret.certFileKey }}
-                  path: cert.pem
-          {{- end }}
+        {{- if .Values.authentication.db.sslEnabled }}
+        {{- if .Values.authentication.db.caFileKey }}
+        - name: ca-file
+          secret:
+            secretName: {{ $postgresSecretName }}
+            items:
+              - key: {{ .Values.authentication.db.caFileKey }}
+                path: ca.pem
+        {{- end }}
+        {{- if .Values.authentication.db.keyFileKey }}
+        - name: key-file
+          secret:
+            secretName: {{ $postgresSecretName }}
+            items:
+              - key: {{ .Values.authentication.db.keyFileKey }}
+                path: key.pem
+        {{- end }}
+        {{- if .Values.authentication.db.certFileKey }}
+        - name: cert-file
+          secret:
+            secretName: {{ $postgresSecretName }}
+            items:
+              - key: {{ .Values.authentication.db.certFileKey }}
+                path: cert.pem
+        {{- end }}
         {{- end }}
 {{- end -}}

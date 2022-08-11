@@ -124,19 +124,19 @@ Returns the tracing url from global if exists or from the chart's values
 
 {{- define "pycsw-pg-connection-string" -}}
 {{- "postgresql://${DB_USER}" -}}
-{{- if .Values.env.db.requirePassword -}}
+{{- if .Values.authentication.db.requirePassword -}}
 {{- ":${DB_PASSWORD}" -}}
 {{- end -}}
 {{- "@${DB_HOST}:${DB_PORT}/${DB_NAME}" -}}
-{{- if .Values.shared.db.sslEnabled -}}
+{{- if .Values.db.sslEnabled -}}
 {{- "?sslmode=require" -}}
-{{- if .Values.postgresSecret.caFileKey -}}
+{{- if .Values.authentication.db.caFileKey -}}
 {{- "&sslrootcert=" -}}/.postgresql/ca.pem
 {{- end -}}
-{{- if .Values.postgresSecret.certFileKey -}}
+{{- if .Values.authentication.db.certFileKey -}}
 {{- "&sslcert=" -}}/.postgresql/cert.pem
 {{- end -}}
-{{- if .Values.postgresSecret.keyFileKey -}}
+{{- if .Values.authentication.db.keyFileKey -}}
 {{- "&sslkey=" -}}/.postgresql/key.pem
 {{- end -}}
 {{- end -}}
@@ -144,16 +144,16 @@ Returns the tracing url from global if exists or from the chart's values
 
 {{- define "pycsw.cors.allowedHeaders" -}}
 {{- $headerList := list -}}
-{{- if ne .Values.env.cors.allowedHeaders "" -}}
-{{- range $k, $v := (split "," .Values.env.cors.allowedHeaders) -}}
+{{- if ne .Values.authentication.cors.allowedHeaders "" -}}
+{{- range $k, $v := (split "," .Values.authentication.cors.allowedHeaders) -}}
 {{- $headerList = append $headerList $v -}}
 {{- end -}}
-{{- if ne .Values.shared.authentication.opa.customHeaderName "" -}}
-{{- $headerList = append $headerList .Values.shared.authentication.opa.customHeaderName -}}
+{{- if ne .Values.authentication.opa.customHeaderName "" -}}
+{{- $headerList = append $headerList .Values.authentication.opa.customHeaderName -}}
 {{- end -}}
 {{- $headerList = uniq $headerList -}}
 {{-  quote (join "," $headerList) -}}
 {{- else -}}
-{{- .Values.shared.authentication.opa.customHeaderName | quote -}}
+{{- .Values.authentication.opa.customHeaderName | quote -}}
 {{- end -}}
 {{- end -}}

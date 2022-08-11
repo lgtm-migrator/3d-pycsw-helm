@@ -1,5 +1,5 @@
 {{- $chartName := include "pycsw.name" . -}}
-{{- if .Values.shared.authentication.opa.enabled }}
+{{- if .Values.authentication.opa.enabled }}
 kind: ConfigMap
 apiVersion: v1
 metadata:

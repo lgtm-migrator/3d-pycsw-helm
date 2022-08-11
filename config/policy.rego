@@ -2,6 +2,7 @@ package envoy.authz
 
 import input.attributes.request.http as http_request
 import input.parsed_query as query_params
+import input.attributes.metadataContext.filterMetadata.map_colonies as map_colonies
 
 # Decline until I allow it.
 default allow = false
@@ -13,9 +14,9 @@ jwt_token = token {
 }
 
 # Gets the token form header
-{{- if .Values.shared.authentication.opa.customHeaderName }}
+{{- if .Values.authentication.opa.customHeaderName }}
 jwt_token = token {
-  token := io.jwt.decode(http_request.headers[{{ .Values.shared.authentication.opa.customHeaderName | lower | quote }}])
+  token := io.jwt.decode(http_request.headers[{{ .Values.authentication.opa.customHeaderName | lower | quote }}])
 }
 {{- end }}
 
@@ -27,7 +28,7 @@ payload = payload {
 
 ### Resources Access ###
 user_has_resource_access[payload] {
-  lower(payload.d[_]) = {{ .Values.shared.authentication.opa.domains | lower | quote }}
+  lower(payload.d[_]) = lower(map_colonies.domain)
 }
 ### Resources Access ###
 

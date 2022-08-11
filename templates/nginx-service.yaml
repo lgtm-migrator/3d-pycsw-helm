@@ -3,7 +3,6 @@
 {{- $releaseName := .Release.Name -}}
 {{- $chartName := include "pycsw.name" . -}}
 {{- $cloudProviderFlavor := include "pycsw.cloudProviderFlavor" . -}}
-{{ $targetPort := ternary .Values.envoy.port .Values.nginx.targetPort .Values.shared.authentication.opa.enabled }}
 
 apiVersion: v1
 kind: Service
@@ -24,20 +23,19 @@ spec:
   type: NodePort
   {{- end }}
   ports:
-    - port: {{ .Values.nginx.port }}
-      targetPort: {{ $targetPort }}
+    - name: internal
+      port: {{ .Values.nginx.internalPort }}
+      targetPort: {{ .Values.env.port }}
       protocol: TCP
-      name: external
+    {{- if .Values.authentication.opa.enabled }}
+    - name: external
+      port: {{ .Values.nginx.port }}
+      targetPort: {{ .Values.envoy.port }}
+      protocol: TCP
+    {{- end }}
       {{- if eq $cloudProviderFlavor "minikube" }}
       nodePort: {{ .Values.nginx.nodePort }}
       {{- end }}
-      # internal
-    {{- if .Values.shared.authentication.opa.enabled }}
-    - port: {{ .Values.nginx.internalServicePort }}
-      targetPort: {{ .Values.nginx.targetPort }}
-      protocol: TCP
-      name: internal
-    {{- end }}
   selector:
     app: {{ $releaseName }}-{{ $chartName }}
     release: {{ .Release.Name }}

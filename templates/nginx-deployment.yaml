@@ -43,7 +43,7 @@ spec:
         - name: {{ $cloudProviderImagePullSecretName | quote }}
     {{- end }}
       volumes:
-        {{- if .Values.shared.authentication.opa.enabled }}
+        {{- if .Values.authentication.opa.enabled }}
         - name: opa-policy
           secret:
             secretName: {{ .Release.Name }}-{{ $chartName }}-opa
@@ -69,7 +69,6 @@ spec:
           {{- with .Values.nginx.image }}
           image: {{ $cloudProviderDockerRegistryUrl }}{{ .repository }}:{{ .tag }}
           {{- end }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
           volumeMounts:
           - mountPath: "/etc/nginx/conf.d"
             name: nginx-config
@@ -80,18 +79,18 @@ spec:
             readOnly: true
           ports:
             - name: http
-              containerPort: {{ .Values.nginx.targetPort }}
+              containerPort: {{ .Values.env.port }}
               protocol: TCP
           livenessProbe:
             initialDelaySeconds: {{ .Values.initialDelaySeconds }}
             httpGet:
               path: /liveness
-              port: {{ .Values.nginx.targetPort }}
+              port: {{ .Values.env.port }}
           {{- if .Values.nginx.resources.enabled }}
           resources:
             {{- toYaml .Values.nginx.resources.value | nindent 12 }}
           {{- end }}
-        {{- if .Values.shared.authentication.opa.enabled }}
+        {{- if .Values.authentication.opa.enabled }}
         - name: envoy
           image: "{{ .Values.envoy.image }}:{{ .Values.envoy.imageTag }}"
           volumeMounts:

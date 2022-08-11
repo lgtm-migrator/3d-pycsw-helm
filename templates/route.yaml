@@ -1,6 +1,7 @@
 {{- $releaseName := .Release.Name -}}
 {{- $chartName := include "pycsw.name" . -}}
 {{- $cloudProviderFlavor := include "pycsw.cloudProviderFlavor" . -}}
+{{- $targetPort := ternary "external" "internal" .Values.authentication.opa.enabled -}}
 {{- if and (and (.Values.enabled) (eq $cloudProviderFlavor "openshift")) (.Values.route.enabled) -}}
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -14,7 +15,7 @@ metadata:
 spec:
   path:  {{ .Values.route.path | default "/" }}
   port:
-    targetPort: external
+    targetPort: {{ $targetPort }}
   to:
     kind: Service
     name: {{ $releaseName }}-{{ $chartName }}-nginx
