@@ -48,7 +48,7 @@ authentication:
 
 image: 
   repository: pycsw
-  tag: nati-test
+  tag: v4.0.0
 
 env:
   port: 8080
@@ -76,7 +76,7 @@ env:
 
 db:
   host: 10.0.4.4
-  name: 3d-v2-profile-test
+  name: 3d-catalog-manager-dev
   schema: public
   port: 5432
   rejectUnauthorized: true
