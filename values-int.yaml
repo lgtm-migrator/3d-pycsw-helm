@@ -5,7 +5,7 @@ global:
   environment: {}
 
 enabled: true
-environment: 3d-dev
+environment: production
 replicaCount: 1
 initialDelaySeconds: 60
 nodePort: 30018
@@ -41,9 +41,9 @@ authentication:
     useExternal: true
     externalSecretName: 'pycsw-postgres-secret'
     sslEnabled: false
-    caFileKey: "caFileKey"
-    certFileKey: "certFileKey"
-    keyFileKey: "keyFileKey"
+    caFileKey: "caFile"
+    certFileKey: "certFile"
+    keyFileKey: "keyFile"
 
 
 image: 
@@ -59,6 +59,7 @@ env:
   responseCompressionEnabled: true
   requestPayloadLimit: 1mb
   maxrecords: null
+  filter_repository: true
   logfile: ''
   profiles: mc_3d
   logFormat: >-

@@ -128,7 +128,7 @@ Returns the tracing url from global if exists or from the chart's values
 {{- ":${DB_PASSWORD}" -}}
 {{- end -}}
 {{- "@${DB_HOST}:${DB_PORT}/${DB_NAME}" -}}
-{{- if .Values.db.sslEnabled -}}
+{{- if .Values.authentication.db.sslEnabled -}}
 {{- "?sslmode=require" -}}
 {{- if .Values.authentication.db.caFileKey -}}
 {{- "&sslrootcert=" -}}/.postgresql/ca.pem

@@ -64,7 +64,7 @@ spec:
           image: {{ $cloudProviderDockerRegistryUrl }}{{ .repository }}:{{ $imageTag }}
           {{- end }}
           volumeMounts:
-            {{- if .Values.authentication.ca.secretName }}
+            {{- if .Values.authentication.ca.externalSecretName }}
             - mountPath: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
               name: root-ca
               subPath: {{ quote .Values.authentication.ca.key }}
@@ -87,7 +87,7 @@ spec:
             - mountPath: "/pycsw/uwsgi.ini"
               name: uwsgi-config
               subPath: uwsgi.ini
-            {{- if .Values.db.sslEnabled }}
+            {{- if .Values.authentication.db.sslEnabled }}
             {{- if .Values.authentication.db.caFileKey }}
             - name: ca-file
               mountPath: /certs/ca.crt
@@ -105,7 +105,7 @@ spec:
             {{- end }}
             {{- end }}
           env:
-            {{- if .Values.authentication.ca.secretName }}
+            {{- if .Values.authentication.ca.externalSecretName }}
             - name: REQUESTS_CA_BUNDLE
               value: {{ printf "%s/%s" .Values.authentication.ca.path .Values.authentication.ca.key | quote }}
             - name: NODE_EXTRA_CA_CERTS
@@ -155,10 +155,10 @@ spec:
             {{- toYaml .Values.resources.value | nindent 12 }}
           {{- end }}
       volumes:
-        {{- if .Values.authentication.ca.secretName }}
+        {{- if .Values.authentication.ca.externalSecretName }}
         - name: root-ca
           secret:
-            secretName: {{ .Values.authentication.ca.secretName }}
+            secretName: {{ .Values.authentication.ca.externalSecretName }}
         {{- end }}
         {{- if .Values.authentication.ssl.enabled }}
         - name: open-ssl

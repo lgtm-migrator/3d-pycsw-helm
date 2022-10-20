@@ -50,6 +50,9 @@ spec:
         - name: proxy-config
           configMap:
             name: {{ .Release.Name }}-{{ $chartName }}-envoy
+        - name: jwt-public-keys
+          secret:
+            secretName: {{ .Values.authentication.jwtPublicKeySecretName }}
         {{- end }}
         - name: nginx-config
           configMap:
@@ -97,6 +100,10 @@ spec:
           - readOnly: true
             mountPath: /config
             name: proxy-config
+          - name: jwt-public-keys
+            readOnly: true
+            mountPath: /keys/mapColonies.jwks
+            subPath: mapColonies.jwks
           args:
           - "envoy"
           - "--config-path"
