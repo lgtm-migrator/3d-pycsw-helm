@@ -153,3 +153,11 @@ ingress:
   enabled: false
   path: /
   host: 'localhost'
+
+annotations:
+  collectord.io/index: SPLUNK_INDEX
+  collectord.io/logs-output: splunk
+  collectord.io/procstats-output: devnull
+  collectord.io/netstats-output: devnull
+  collectord.io/nettable-output: devnull
+  collectord.io/stats-output: devnull

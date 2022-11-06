@@ -32,8 +32,10 @@ metadata:
     environment: {{ include "pycsw.environment" . }}
     release: {{ $releaseName }}
     {{- include "pycsw.labels" . | nindent 4 }}
+{{- with .Values.annotations }}
   annotations:
-    collectord.io/index: {{ quote .Values.splunkIndex }}
+{{ toYaml . | indent 4 }}
+{{- end }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
